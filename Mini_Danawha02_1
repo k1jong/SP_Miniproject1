@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Mini_Danawha02
+{
+    public class Com
+    {
+        public string Name { get; set; }
+        public double Price { get; set; }
+        public string Cid { get; set; }
+        public string Cphone { get; set; }
+        public string Ctime { get; set; }
+        public string Ctype { get; set; }
+        public string Cprice { get; set; }
+        public string Cpu { get; set; }
+        public string Gpu { get; set; }
+        public string Cme { get; set; }
+        public string Cmb { get; set; }
+        public string Ccase { get; set; }
+        public string Cpw { get; set; }
+        public string Cas { get; set; }
+    }
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+        public async void OrderCom(string cid, string cpu, string gpu, string cme, string cmb, string ccase, string cpw, string cas)
+        {
+            //여기에 코딩하세요.
+            AppendText(($"{cid} 컴퓨터 주문 \n"));
+            Com com = await MakeCom(cid, cpu, gpu, cme, cmb, ccase, cpw, cas);
+            //Console.WriteLine($"{name} 케익 완성");
+        }
+
+        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+
+        public async Task<Com> MakeCom(string cid, string cpu, string gpu, string cme, string cmb, string ccase, string cpw, string cas)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                AppendText(($"주문번호 {cid} : 컴퓨터 주문 제작 시작 \n"));
+                await Task.Delay(1000);
+                AppendText(($"주문번호 {cid} : {cpu} 삽입완료 \n"));
+                await Task.Delay(1000);
+                if (gpu != null)
+                {
+                    AppendText(($"주문번호 {cid} : {gpu} 삽입완료 \n"));
+                    await Task.Delay(1000);
+                }
+                AppendText(($"주문번호 {cid} : {cme} 삽입완료 \n"));
+                await Task.Delay(1000);
+                AppendText(($"주문번호 {cid} : {cmb} 삽입완료 \n"));
+                await Task.Delay(1000);
+                AppendText(($"주문번호 {cid} : {cpw} 삽입완료 \n"));
+                await Task.Delay(1000);
+                if (cas != null)
+                {
+                    AppendText(($"주문번호 {cid} : {cas} 삽입완료 \n"));
+                    await Task.Delay(1000);
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+            return new Com { Cid = cid };
+        }
+        private void AppendText(string text)
+        {
+            if (richTextBox1.InvokeRequired)
+            {
+                richTextBox1.Invoke(new Action<string>(AppendText), text);
+            }
+            else
+            {
+                richTextBox1.AppendText(text);
+            }
+        }
+            private void button1_Click(object sender, EventArgs e)
+        {
+            Task.Run(() =>
+            {
+                Thread[] t = new Thread[10];
+                for (int i = 0; i < t.Length; i++)
+                {
+                    string cid = $"{i}";
+                    string cpu = $"CPU{i}";
+                    string gpu = $"GPU{i}";
+                    string cme = $"메모리{i}";
+                    string cmb = $"메인보드{i}";
+                    string ccase = $"케이스{i}";
+                    string cpw = $"파워{i}";
+                    string cas = $"SSD + HDD{i}";
+                    //double price = 0;
+                    t[i] = new Thread(() =>
+                        OrderCom(cid, cpu, gpu, cme, cmb, ccase, cpw, cas));
+                    t[i].IsBackground = true;
+                    t[i].Start();
+                }
+
+                foreach (Thread thread in t)
+                {
+                    thread.Join();
+                }
+
+                //AppendText(("모든 주문 끝 \n"));
+            });
+        }
+    }
+}
