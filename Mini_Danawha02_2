@@ -1,0 +1,182 @@
+using Oracle.ManagedDataAccess.Client;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Mini_Danawha02
+{
+    public class Com
+    {
+        public string Name { get; set; }
+        public double Price { get; set; }
+        public string Cid { get; set; }
+        public string Cphone { get; set; }
+        public string Ctime { get; set; }
+        public string Ctype { get; set; }
+        public string Cprice { get; set; }
+        public string Cpu { get; set; }
+        public string Gpu { get; set; }
+        public string Cme { get; set; }
+        public string Cmb { get; set; }
+        public string Ccase { get; set; }
+        public string Cpw { get; set; }
+        public string Cas { get; set; }
+    }
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+        public async void OrderCom(string cid, string cpu, string gpu, string cme, string cmb, string ccase, string cpw, string cas)
+        {
+            string strConn = "Data Source=(DESCRIPTION=" +
+             "(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)" +
+             "(HOST=localhost)(PORT=1521)))" +
+             "(CONNECT_DATA=(SERVER=DEDICATED)" +
+             "(SERVICE_NAME=xe)));" +
+             "User Id=hr;Password=hr;";
+            OracleConnection conn = new OracleConnection(strConn);
+            conn.Open();
+            OracleCommand cmd = new OracleCommand();
+            cmd.Connection = conn;
+
+            cmd.CommandText = $"insert into custumer values (auto_increase.nextval,'01043146182',sysdate,0,123123,'{cpu}','{gpu}','{cme}','{cmb}','{ccase}','{cpw}','{cas}')";
+            cmd.ExecuteNonQuery();
+
+            conn.Close();
+
+            AppendText(($"{cid} 컴퓨터 주문 \n"));
+            Com com = await MakeCom(cid, cpu, gpu, cme, cmb, ccase, cpw, cas);
+        }
+
+        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+
+        public async Task<Com> MakeCom(string cid, string cpu, string gpu, string cme, string cmb, string ccase, string cpw, string cas)
+        {
+            string strConn = "Data Source=(DESCRIPTION=" +
+             "(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)" +
+             "(HOST=localhost)(PORT=1521)))" +
+             "(CONNECT_DATA=(SERVER=DEDICATED)" +
+             "(SERVICE_NAME=xe)));" +
+             "User Id=hr;Password=hr;";
+
+            //1.연결 객체 만들기 - Client
+            OracleConnection conn = new OracleConnection(strConn);
+
+            //2.데이터베이스 접속을 위한 연결
+            conn.Open();
+
+            //3.서버와 함께 신나게 놀기
+            //3.1 Query 명령객체 만들기
+            OracleCommand cmd = new OracleCommand();
+            cmd.Connection = conn; //연결객체와 연동
+
+            await _semaphore.WaitAsync();
+            try
+            {
+                cmd.CommandText = $"SELECT binven FROM bupum WHERE bname = '{cpu}' OR bname = '{gpu}' OR bname = '{cme}' OR bname = '{cmb}' OR bname ='{ccase}' OR bname = '{cpw}' OR bname = '{cas}'";
+                OracleDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    int binven = reader.GetInt32(0);
+                    if (binven <= 0)
+                    {
+                        AppendText($"재고가 부족합니다\n");
+                        return null;
+                    }
+                }
+
+                cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{cpu}'";
+                cmd.ExecuteNonQuery();
+                if (gpu != null)
+                {
+                    cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{gpu}'";
+                    cmd.ExecuteNonQuery();
+                }
+                cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{cme}'";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{cmb}'";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{ccase}'";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{cpw}'";
+                cmd.ExecuteNonQuery();
+                if (cas != null)
+                {
+                    cmd.CommandText = $"UPDATE bupum SET binven = binven - 1, bsales = bsales + 1 WHERE bname = '{cas}'";
+                    cmd.ExecuteNonQuery();
+                }
+
+
+                AppendText(($"주문번호 {cid} : 컴퓨터 주문 제작 시작 \n"));
+                await Task.Delay(1000);
+                AppendText(($"주문번호 {cid} : {cpu} 삽입완료 \n"));
+                await Task.Delay(1000);
+                if (gpu != null)
+                {
+                    AppendText(($"주문번호 {cid} : {gpu} 삽입완료 \n"));
+                    await Task.Delay(1000);
+                }
+                AppendText(($"주문번호 {cid} : {cme} 삽입완료 \n"));
+                await Task.Delay(1000);
+                AppendText(($"주문번호 {cid} : {cmb} 삽입완료 \n"));
+                await Task.Delay(1000);
+                AppendText(($"주문번호 {cid} : {cpw} 삽입완료 \n"));
+                await Task.Delay(1000);
+                if (cas != null)
+                {
+                    AppendText(($"주문번호 {cid} : {cas} 삽입완료 \n"));
+                    await Task.Delay(1000);
+                }
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+            cmd.CommandText = $"UPDATE custumer SET ctype=1 WHERE cid = '{cid}'";
+            cmd.ExecuteNonQuery();
+            conn.Close();
+            return new Com { Cid = cid,Cpu=cpu,Gpu=gpu };
+        }
+        private void AppendText(string text)
+        {
+            if (richTextBox1.InvokeRequired)
+            {
+                richTextBox1.Invoke(new Action<string>(AppendText), text);
+            }
+            else
+            {
+                richTextBox1.AppendText(text);
+            }
+        }
+            private void button1_Click(object sender, EventArgs e)
+        {
+            Task.Run(() =>
+            {
+                string cid = $"1";
+                string cpu = $"CPU_i3-13";
+                string gpu = $"GPU_RTX2060";
+                string cme = $"RAM_16GB";
+                string cmb = $"MAIN_MSI";
+                string ccase = $"CASE_EM2-STEREO_BLACK";
+                string cpw = $"PW_500W";
+                string cas = $"HDD_512GB";
+                Thread t = new Thread(() =>
+                  OrderCom(cid, cpu, gpu, cme, cmb, ccase, cpw, cas));
+                t.IsBackground = true;
+                t.Start();
+                t.Join();
+
+                //AppendText(("모든 주문 끝 \n"));
+            });
+        }
+    }
+}
